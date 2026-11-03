@@ -1,0 +1,87 @@
+# ---- Cell 1: Import libraries ----
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+
+# ---- Cell 2: Load dataset ----
+df = pd.read_csv('diabetes.csv')
+print(df.shape)
+df.head()
+
+# ---- Cell 3: Pre-process, split and scale ----
+df = df.dropna()
+X = df.iloc[:, :-1]                               # all columns except the last
+y = LabelEncoder().fit_transform(df.iloc[:, -1])  # last column = result (0/1)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# ---- Cell 4: KNN ----
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+y_pred = knn.predict(X_test)
+
+# ---- Cell 5: Confusion matrix, accuracy, error rate, precision, recall ----
+print('Confusion Matrix:')
+print(confusion_matrix(y_test, y_pred))
+
+accuracy = accuracy_score(y_test, y_pred)
+print('Accuracy   :', round(accuracy, 4))
+print('Error Rate :', round(1 - accuracy, 4))
+print('Precision  :', round(precision_score(y_test, y_pred), 4))
+print('Recall     :', round(recall_score(y_test, y_pred), 4))
+
+
+
+
+
+
+
+
+
+explanation - 
+"""
+KNN ON DIABETES DATASET: CELL-WISE EXPLANATION
+
+Cell 1 (Imports)
+  Input  : Loads the tools for data, scaling, KNN and scoring.
+  Output : Nothing is shown.
+
+Cell 2 (Load dataset)
+  Input  : Reads diabetes.csv.
+  Output : (768, 9) means 768 patients and 9 columns. The first 5 rows show glucose, BMI, age and the
+           Outcome column (1 = diabetes, 0 = no diabetes).
+
+Cell 3 (Pre-process, split and scale)
+  Input  : Removes empty rows. X = all columns except the last, y = Outcome. 80% train, 20% test.
+           Scaling puts all columns on the same range, because KNN uses distance and big-number
+           columns (like insulin) would otherwise dominate.
+  Output : Nothing is shown.
+
+Cell 4 (KNN)
+  Input  : Looks at the 5 nearest patients and copies their majority result.
+  Output : Nothing is shown. The predictions are stored in y_pred.
+
+Cell 5 (Confusion matrix and scores)
+  Input  : Compares predicted results with real results.
+  Output : Confusion Matrix [[79 20] [27 28]]
+             79 = correctly predicted no diabetes (TN), 20 = wrongly predicted diabetes (FP)
+             27 = missed diabetic patients (FN), 28 = correctly found diabetic patients (TP)
+           Accuracy   = 0.6948 -> about 69% predictions are correct
+           Error Rate = 0.3052 -> about 31% are wrong (1 - accuracy)
+           Precision  = 0.5833 -> of those predicted diabetic, about 58% truly are
+           Recall     = 0.5091 -> of truly diabetic patients, about 51% were found
+
+RESULT (as per problem statement)
+  - Implemented the K-Nearest Neighbors algorithm (K = 5) on the diabetes dataset successfully.
+  - Computed the confusion matrix: [[79 20] [27 28]].
+  - Accuracy = 69.48%, Error rate = 30.52%, Precision = 58.33%, Recall = 50.91%.
+  CONCLUSION: KNN was successfully applied and all required measures were calculated. It gives
+  moderate performance (about 69% accuracy) because the dataset is small and noisy. Recall is low,
+  so some diabetic patients are missed.
+"""

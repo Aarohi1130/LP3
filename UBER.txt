@@ -1,0 +1,146 @@
+# ---- Cell 1: Import libraries ----
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+# ---- Cell 2: Load dataset ----
+df = pd.read_csv('uber.csv')
+df.head()
+
+# ---- Cell 3: Pre-process the dataset ----
+df = df.drop(['Unnamed: 0', 'key'], axis=1)
+df = df.dropna()
+
+# date column -> hour and year
+df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+df['hour'] = df['pickup_datetime'].dt.hour
+df['year'] = df['pickup_datetime'].dt.year
+df = df.drop('pickup_datetime', axis=1)
+
+# distance (km) between pickup and drop using Haversine formula
+def haversine(lon1, lat1, lon2, lat2):
+    lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+    a = np.sin((lat2-lat1)/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin((lon2-lon1)/2)**2
+    return 6371 * 2 * np.arcsin(np.sqrt(a))
+
+df['distance'] = haversine(df['pickup_longitude'], df['pickup_latitude'],
+                           df['dropoff_longitude'], df['dropoff_latitude'])
+
+# remove wrong values
+df = df[(df['fare_amount'] > 0) & (df['distance'] > 0)]
+df = df[(df['passenger_count'] >= 1) & (df['passenger_count'] <= 6)]
+print(df.shape)
+
+# ---- Cell 4: Identify outliers ----
+sns.boxplot(y=df['fare_amount'])
+plt.title('Fare Amount')
+plt.show()
+
+# IQR method
+for col in ['fare_amount', 'distance']:
+    q1 = df[col].quantile(0.25)
+    q3 = df[col].quantile(0.75)
+    iqr = q3 - q1
+    low = q1 - 1.5 * iqr
+    high = q3 + 1.5 * iqr
+    print(col, 'outliers:', ((df[col] < low) | (df[col] > high)).sum())
+    df = df[(df[col] >= low) & (df[col] <= high)]    # remove outliers
+
+print(df.shape)
+
+# ---- Cell 5: Check the correlation ----
+plt.figure(figsize=(9, 6))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm', fmt='.2f')
+plt.show()
+
+# ---- Cell 6: Split data ----
+X = df[['pickup_longitude', 'pickup_latitude', 'dropoff_longitude', 'dropoff_latitude',
+        'passenger_count', 'hour', 'year', 'distance']]
+y = df['fare_amount']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# ---- Cell 7: Linear Regression ----
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+lr_pred = lr.predict(X_test)
+
+# ---- Cell 8: Random Forest Regression ----
+rf = RandomForestRegressor(n_estimators=20, max_depth=12, random_state=42, n_jobs=-1)
+rf.fit(X_train, y_train)
+rf_pred = rf.predict(X_test)
+
+# ---- Cell 9: Evaluate and compare ----
+results = pd.DataFrame({
+    'Model': ['Linear Regression', 'Random Forest'],
+    'R2 Score': [r2_score(y_test, lr_pred), r2_score(y_test, rf_pred)],
+    'RMSE': [np.sqrt(mean_squared_error(y_test, lr_pred)), np.sqrt(mean_squared_error(y_test, rf_pred))],
+    'MAE': [mean_absolute_error(y_test, lr_pred), mean_absolute_error(y_test, rf_pred)]
+})
+print(results)
+
+
+
+
+
+
+explanation - 
+"""
+UBER FARE PREDICTION: CELL-WISE EXPLANATION
+
+Cell 1 (Imports)
+  Input  : Loads the tools: pandas (tables), numpy (maths), seaborn/matplotlib (graphs), sklearn (models).
+  Output : Nothing is shown. It only gets the tools ready.
+
+Cell 2 (Load dataset)
+  Input  : Reads uber.csv into a table called df.
+  Output : First 5 rows: fare, pickup time, pickup/drop location and passenger count.
+
+Cell 3 (Pre-process)
+  Input  : Removes useless columns and empty rows. Splits the date into hour and year.
+           Finds ride distance in km from pickup and drop points. Removes wrong values (fare <= 0, 0 km, bad passenger count).
+  Output : (193656, 9) means 193,656 clean rows and 9 columns are left.
+
+Cell 4 (Outliers)
+  Input  : Boxplot shows outliers (very high or very low fares) as dots. The IQR rule counts them and removes them.
+  Output : Boxplot graph. fare_amount outliers: 16620, distance outliers: 8013.
+           After removing them, (169023, 9) rows are left.
+
+Cell 5 (Correlation)
+  Input  : Heatmap shows how strongly each column is related to the others (-1 to +1).
+  Output : Coloured table. A value near +1 means a strong link. Look at the fare_amount row to see which column affects fare most.
+
+Cell 6 (Split)
+  Input  : X = input columns, y = fare to predict. 80% data for training, 20% for testing.
+  Output : Nothing is shown.
+
+Cell 7 (Linear Regression)
+  Input  : Model learns a straight-line relation from the training data, then predicts fares for the test data.
+  Output : Nothing is shown. The predictions are stored in lr_pred.
+
+Cell 8 (Random Forest)
+  Input  : Many decision trees (20) learn from the training data and their answers are averaged.
+  Output : Nothing is shown. The predictions are stored in rf_pred.
+
+Cell 9 (Evaluate and compare)
+  Input  : Compares predicted fares with real fares using R2, RMSE and MAE.
+  Output : Linear Regression: R2 = 0.662, RMSE = 2.161, MAE = 1.535
+           Random Forest    : R2 = 0.718, RMSE = 1.975, MAE = 1.376
+  Meaning: Higher R2 and lower RMSE/MAE is better, so Random Forest wins.
+
+RESULT (as per problem statement)
+  - Pre-processed the dataset: removed useless columns, missing and wrong values, and created hour, year
+    and distance columns. 193,656 clean rows were obtained.
+  - Identified outliers: found 16,620 in fare and 8,013 in distance using boxplot and IQR, and removed
+    them. 169,023 rows were left.
+  - Checked the correlation between all columns using a heatmap.
+  - Implemented Linear Regression and Random Forest Regression successfully.
+  - Evaluated both models: Random Forest (R2 = 0.718, RMSE = 1.975) performed better than Linear
+    Regression (R2 = 0.662, RMSE = 2.161).
+  CONCLUSION: We successfully predicted Uber ride fares, and Random Forest is the better model
+  because it has a higher R2 score and a lower error.
+"""

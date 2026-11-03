@@ -1,0 +1,101 @@
+# ---- Cell 1: Import libraries ----
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+
+# ---- Cell 2: Load dataset ----
+df = pd.read_csv('emails.csv')
+print(df.shape)
+
+# ---- Cell 3: Pre-process (0 = Not Spam, 1 = Spam) ----
+print(df.isnull().sum().sum())
+X = df.drop(['Email No.', 'Prediction'], axis=1)
+y = df['Prediction']
+
+# keep the 500 most common words so the models run fast
+top_words = X.sum().sort_values(ascending=False).head(500).index
+X = X[top_words]
+
+# ---- Cell 4: Split data ----
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# ---- Cell 5: K-Nearest Neighbors ----
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+knn_pred = knn.predict(X_test)
+
+# ---- Cell 6: Support Vector Machine ----
+svm = SVC(kernel='linear')
+svm.fit(X_train, y_train)
+svm_pred = svm.predict(X_test)
+
+# ---- Cell 7: Analyze performance ----
+print('KNN Confusion Matrix')
+print(confusion_matrix(y_test, knn_pred))
+print('SVM Confusion Matrix')
+print(confusion_matrix(y_test, svm_pred))
+
+results = pd.DataFrame({
+    'Model': ['KNN', 'SVM'],
+    'Accuracy': [accuracy_score(y_test, knn_pred), accuracy_score(y_test, svm_pred)],
+    'Precision': [precision_score(y_test, knn_pred), precision_score(y_test, svm_pred)],
+    'Recall': [recall_score(y_test, knn_pred), recall_score(y_test, svm_pred)]
+})
+print(results)
+
+
+
+
+
+
+
+explanation- 
+"""
+EMAIL SPAM DETECTION (KNN and SVM): CELL-WISE EXPLANATION
+
+Cell 1 (Imports)
+  Input  : Loads the tools, the two models (KNN, SVM) and the scoring functions.
+  Output : Nothing is shown.
+
+Cell 2 (Load dataset)
+  Input  : Reads emails.csv.
+  Output : (5172, 3002) means 5,172 emails and 3,002 columns (word counts, email number and label).
+
+Cell 3 (Pre-process)
+  Input  : Checks missing values. X = word counts, y = label (0 = Not Spam, 1 = Spam).
+           Keeps only the 500 most common words so the models run faster.
+  Output : 0 means there are no missing values.
+
+Cell 4 (Split)
+  Input  : 80% emails for training, 20% for testing.
+  Output : Nothing is shown.
+
+Cell 5 (KNN)
+  Input  : Looks at the 5 most similar emails and copies their majority label.
+  Output : Nothing is shown. The predictions are stored in knn_pred.
+
+Cell 6 (SVM)
+  Input  : Draws the best dividing line between spam and not-spam emails.
+  Output : Nothing is shown. The predictions are stored in svm_pred.
+
+Cell 7 (Analyze performance)
+  Input  : Confusion matrix (correct and wrong predictions) and accuracy, precision, recall.
+  Output : KNN matrix [[643 96] [53 243]] -> 643 + 243 correct, 96 + 53 wrong.
+           SVM matrix [[714 25] [19 277]] -> 714 + 277 correct, 25 + 19 wrong.
+           KNN: Accuracy 85.6%, Precision 71.7%, Recall 82.1%
+           SVM: Accuracy 95.7%, Precision 91.7%, Recall 93.6%
+  Meaning: SVM is better on all three scores and makes far fewer mistakes.
+
+RESULT (as per problem statement)
+  - Classified emails into two states using binary classification: Normal (Not Spam = 0) and
+    Abnormal (Spam = 1).
+  - Implemented K-Nearest Neighbors and Support Vector Machine successfully.
+  - Analyzed performance: KNN gave 85.6% accuracy, and SVM gave 95.7% accuracy. SVM also has higher
+    precision (91.7% vs 71.7%) and higher recall (93.6% vs 82.1%).
+  CONCLUSION: We successfully detected spam emails using both models. SVM performs better than KNN
+  and is the more reliable spam detector on this dataset.
+"""
