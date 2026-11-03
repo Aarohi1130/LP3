@@ -54,3 +54,113 @@ Complexity: iterative is O(n) time and O(1) space. Recursive is O(2ⁿ) time and
 Why: recursion recomputes the same subproblems, and memoization stores them.
 Output: F(10) = 55. Iterative has 10 steps, recursive 177 calls, memoized 19 calls.
 '''
+
+
+
+
+explanation - 
+P1: Fibonacci with step count
+
+What it is about: Fibonacci means each number is the sum of the two before it (0, 1, 1, 2, 3, 5...). We find F(10) in 3 ways and count the steps each way takes.
+
+Section 1: Loop method
+
+Line: def fib_iterative(n):
+Makes a function. n is which Fibonacci number we want.
+
+Line: steps = 0
+The step counter, starting at 0.
+
+Line: a, b = 0, 1
+Two boxes holding the first two numbers, F(0) and F(1).
+
+Line: for _ in range(n):
+Repeat the lines below n times. _ means we don’t need the turn number.
+
+Line: a, b = b, a + b
+Move one place forward. a takes b’s value, and b becomes a + b.
+
+Line: steps += 1
+Add 1 to the counter on every turn.
+
+Line: return a, steps
+Give back the answer (a) and the step count.
+
+Example (n = 5): a, b goes (0,1) → (1,1) → (1,2) → (2,3) → (3,5) → (5,8). The answer is 5 in 5 steps.
+
+Section 2: Recursion method
+
+Line: rec_steps = 0
+A counter outside the function, so all calls share it.
+
+Line: def fib_recursive(n):
+Makes a function that finds F(n) by calling itself.
+
+Line: global rec_steps
+Tells Python we want to change the outside counter, not make a new one.
+
+Line: rec_steps += 1
+Every call adds 1, so one call is one step.
+
+Line: if n < 2: and return n
+Base case. If n is 0 or 1, the answer is known (F(0)=0, F(1)=1), so return it and stop.
+
+Line: return fib_recursive(n - 1) + fib_recursive(n - 2)
+Ask for F(n-1) and F(n-2) and add them. This is the Fibonacci rule. Two calls each time makes the work double, so it is slow (177 calls for n = 10).
+
+Section 3: Memoization method
+
+Line: def fib_memo(n, memo=None, counter=None):
+A function taking n, a notebook (memo) and a counter. None means “empty by default”.
+
+Line: if memo is None: memo = {}
+On the first call, make an empty notebook (dictionary).
+
+Line: if counter is None: counter = [0]
+On the first call, make the counter. It is a list so all calls share the same one.
+
+Line: counter[0] += 1
+Count one call as one step.
+
+Line: if n < 2: and return n, counter[0]
+Base case. Return the answer and the current count.
+
+Line: if n not in memo:
+Check the notebook. If F(n) is not written there, calculate it.
+
+Line: memo[n] = fib_memo(n - 1, memo, counter)[0] + fib_memo(n - 2, memo, counter)[0]
+Ask for F(n-1) and F(n-2) (passing the same notebook and counter). [0] picks only the answer from each returned pair. Add them and write the result in the notebook.
+
+Line: return memo[n], counter[0]
+Return the answer from the notebook and the count.
+
+Section 4: Main part
+
+Line: if __name__ == "__main__":
+“Start the program here.”
+
+Line: n = 10
+We want F(10).
+
+Lines: val, s = fib_iterative(n) and print(f"Iterative : ...")
+Run the loop method, save the answer in val and the steps in s, and print them.
+
+Lines: rec_steps = 0, val = fib_recursive(n), print(f"Recursive : ...")
+Reset the counter to 0, run recursion, and print the answer and the counter value.
+
+Lines: val, s = fib_memo(n) and print(f"Memoized : ...")
+Run memoization and print the answer and calls.
+
+Line: print("Series:", [fib_iterative(i)[0] for i in range(n + 1)])
+Find F(0) to F(10) one by one and print them as a list.
+
+Output explanation
+Iterative : F(10) = 55, steps = 10
+Recursive : F(10) = 55, steps (calls) = 177
+Memoized  : F(10) = 55, steps (calls) = 19
+Series: [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+Line 1: the loop gave 55 in 10 steps.
+Line 2: recursion gave 55 but needed 177 calls (repeated work).
+Line 3: memoization gave 55 in 19 calls (it remembered answers).
+Line 4: the first 11 Fibonacci numbers.
+Complexity: loop O(n), recursion O(2ⁿ), memoization O(n).
