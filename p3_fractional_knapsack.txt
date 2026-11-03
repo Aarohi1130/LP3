@@ -49,3 +49,82 @@ Complexity: O(n log n) because of sorting.
 Why optimal: fractions are allowed, so the best ratio first is always right.
 Output: maximum value 240, with C taken as 0.6667.
 """
+
+
+
+explanation - 
+P3: Fractional knapsack
+
+What it is about: a bag holds 50 kg. Items A (60, 10), B (100, 20), C (120, 30) are given as (value, weight). Items can be cut. Find the maximum value.
+
+Section 1: Sort by value per kg
+
+Line: def fractional_knapsack(items, capacity):
+Makes a function taking the items and the bag capacity.
+
+Line: items = sorted(items, key=lambda x: x[1] / x[2], reverse=True)
+Sorts by value ÷ weight (x[1] is value, x[2] is weight), best first. Ratios: A = 6, B = 5, C = 4. Order: A, B, C.
+
+Section 2: Set up trackers
+
+Line: total, remaining, taken = 0.0, capacity, []
+
+total: value collected so far (0)
+remaining: space left in the bag (50)
+taken: a list recording what we took
+Section 3: Fill the bag
+
+Line: for name, v, w in items:
+Go through the items in sorted order.
+
+Lines: if remaining == 0: and break
+If the bag is full, stop.
+
+Lines: if w <= remaining:
+If the whole item fits, do the next three lines.
+
+Line: taken.append((name, 1.0))
+Note that we took 100% of this item.
+
+Line: total += v
+Add its full value.
+
+Line: remaining -= w
+Reduce the free space by its weight.
+
+Line: else:
+The whole item does not fit, so do the next lines.
+
+Line: frac = remaining / w
+The part we can take. For C: 20 ÷ 30 = 0.6667.
+
+Line: taken.append((name, round(frac, 4)))
+Note the fraction, rounded to 4 decimals.
+
+Line: total += v * frac
+Add the value of that part only.
+
+Line: remaining = 0
+The bag is now full.
+
+Step by step:
+
+Item	Space left	Action	Total
+A	50	fits, take all	60
+B	40	fits, take all	160
+C	20	needs 30, take 0.6667	240
+Section 4: Return and main
+
+Line: return total, taken
+Gives back the total value and the fractions taken.
+
+Lines: items = [...], cap = 50, the print lines, and fractional_knapsack(items, cap)
+Set the data, call the function, and print the results. round(total, 2) keeps 2 decimals.
+
+Output explanation
+Fraction taken: [('A', 1.0), ('B', 1.0), ('C', 0.6667)]
+Maximum value : 240.0
+All of A, all of B, and two-thirds of C.
+Maximum value = 60 + 100 + 80 = 240.
+Greedy works here because cutting is allowed.
+Complexity: O(n log n).
